@@ -3,25 +3,25 @@
   "version": "1.0.0",
   "description": "GROWI plugin: list all tags as links to the search page",
   "license": "MIT",
-  "keywords": ["growi", "growi-plugin"],
+  "keywords": [
+    "growi",
+    "growi-plugin"
+  ],
   "type": "module",
   "scripts": {
     "build": "tsc && vite build"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "unist-util-visit": "^5.0.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@vitejs/plugin-react": "^4.3.0",
     "typescript": "^5.4.0",
     "vite": "^5.4.0"
   },
   "growiPlugin": {
     "schemaVersion": "4",
-    "types": ["script"]
+    "types": [
+      "script"
+    ]
   }
 }

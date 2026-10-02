@@ -27,11 +27,14 @@ const fetchAllTags = async(): Promise<Tag[]> => {
   }
 };
 
-const TagList = ({ sort }: { sort: string }): any => {
+type TagListProps = { sort: string, num: number | null, more: boolean };
+
+const TagList = ({ sort, num, more }: TagListProps): any => {
   const React = getReact();
   const h = React.createElement;
   const [tags, setTags] = React.useState(null as Tag[] | null);
   const [error, setError] = React.useState(null as string | null);
+  const [visibleCount, setVisibleCount] = React.useState(num);
 
   React.useEffect(() => {
     fetchAllTags().then(setTags).catch((e: unknown) => setError(String(e)));
@@ -48,11 +51,13 @@ const TagList = ({ sort }: { sort: string }): any => {
   }
 
   const sorted = [...tags].sort((a, b) => (sort === 'name' ? a.name.localeCompare(b.name, 'ja') : b.count - a.count));
+  const visible = visibleCount == null ? sorted : sorted.slice(0, visibleCount);
+  const rest = sorted.length - visible.length;
 
-  return h(
+  const list = h(
     'span',
     { className: 'd-flex flex-wrap gap-2' },
-    sorted.map(tag => h(
+    visible.map(tag => h(
       'a',
       {
         key: tag.name,
@@ -64,6 +69,20 @@ const TagList = ({ sort }: { sort: string }): any => {
       `${tag.name} (${tag.count})`,
     )),
   );
+
+  const moreButton = more && rest > 0 && num != null
+    ? h(
+      'button',
+      {
+        type: 'button',
+        className: 'btn btn-sm btn-outline-secondary mt-2',
+        onClick: () => setVisibleCount(visible.length + num),
+      },
+      `さらに表示（残り ${rest} 件）`,
+    )
+    : null;
+
+  return h('span', { className: 'd-block' }, list, moreButton);
 };
 
 export const withTagList = (A: any) => {
@@ -71,8 +90,13 @@ export const withTagList = (A: any) => {
     const h = getReact().createElement;
     const href: unknown = props.href;
     if (typeof href === 'string' && href.startsWith(TAG_LIST_HREF)) {
-      const sort = new URLSearchParams(href.split('?')[1] ?? '').get('sort') ?? 'count';
-      return h(TagList, { sort });
+      const params = new URLSearchParams(href.split('?')[1] ?? '');
+      const num = Number.parseInt(params.get('num') ?? '', 10);
+      return h(TagList, {
+        sort: params.get('sort') ?? 'count',
+        num: num > 0 ? num : null,
+        more: params.get('more') === 'true',
+      });
     }
     return h(A ?? 'a', props);
   };

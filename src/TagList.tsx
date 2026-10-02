@@ -58,6 +58,8 @@ const TagList = ({ sort }: { sort: string }): any => {
         key: tag.name,
         href: `/_search?q=${encodeURIComponent(`tag:${tag.name}`)}`,
         className: 'badge bg-primary text-decoration-none',
+        // テーマの本文リンク色 (.wiki a など) に上書きされないようインラインで指定する
+        style: { color: '#fff' },
       },
       `${tag.name} (${tag.count})`,
     )),

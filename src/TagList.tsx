@@ -27,9 +27,12 @@ const fetchAllTags = async(): Promise<Tag[]> => {
   }
 };
 
-type TagListProps = { sort: string, num: number | null, more: boolean };
+// タグ名は「部門名:案件名」の形を想定する。全角の「：」も区切りとして扱う
+const DEPT_SEPARATORS = [':', '：'];
 
-const TagList = ({ sort, num, more }: TagListProps): any => {
+type TagListProps = { sort: string, num: number | null, more: boolean, dept: string | null };
+
+const TagList = ({ sort, num, more, dept }: TagListProps): any => {
   const React = getReact();
   const h = React.createElement;
   const [tags, setTags] = React.useState(null as Tag[] | null);
@@ -46,11 +49,21 @@ const TagList = ({ sort, num, more }: TagListProps): any => {
   if (tags == null) {
     return h('span', { className: 'text-muted' }, 'タグ一覧を読み込み中...');
   }
-  if (tags.length === 0) {
-    return h('span', { className: 'text-muted' }, 'タグがありません');
+  // dept 指定時はその部門のタグだけに絞り、表示名から部門名の部分を外す
+  const prefixes = dept != null ? DEPT_SEPARATORS.map(sep => `${dept}${sep}`) : null;
+  const items: (Tag & { label: string })[] = (tags as Tag[]).flatMap((tag) => {
+    if (prefixes == null) {
+      return [{ ...tag, label: tag.name }];
+    }
+    const prefix = prefixes.find(p => tag.name.startsWith(p));
+    return prefix == null ? [] : [{ ...tag, label: tag.name.slice(prefix.length) }];
+  });
+
+  if (items.length === 0) {
+    return h('span', { className: 'text-muted' }, dept != null ? `部門「${dept}」のタグがありません` : 'タグがありません');
   }
 
-  const sorted = [...tags].sort((a, b) => (sort === 'name' ? a.name.localeCompare(b.name, 'ja') : b.count - a.count));
+  const sorted = items.sort((a, b) => (sort === 'name' ? a.label.localeCompare(b.label, 'ja') : b.count - a.count));
   const visible = visibleCount == null ? sorted : sorted.slice(0, visibleCount);
   const rest = sorted.length - visible.length;
 
@@ -66,7 +79,7 @@ const TagList = ({ sort, num, more }: TagListProps): any => {
         // テーマの本文リンク色 (.wiki a など) に上書きされないようインラインで指定する
         style: { color: '#fff' },
       },
-      `${tag.name} (${tag.count})`,
+      `${tag.label} (${tag.count})`,
     )),
   );
 
@@ -96,6 +109,7 @@ export const withTagList = (A: any) => {
         sort: params.get('sort') ?? 'count',
         num: num > 0 ? num : null,
         more: params.get('more') === 'true',
+        dept: params.get('dept'),
       });
     }
     return h(A ?? 'a', props);

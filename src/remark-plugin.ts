@@ -2,7 +2,7 @@ import { visit } from 'unist-util-visit';
 
 export const TAG_LIST_HREF = '#growi-plugin-tag-list';
 
-// $taglist(sort=name, num=20, more, dept=営業部) を <a href="#growi-plugin-tag-list?sort=...&num=...&more=...&dept=..."> に変換する。
+// $taglist(sort=name, num=20, more, filter=営業部, large, newline) を <a href="#growi-plugin-tag-list?sort=...&num=...&more=...&filter=...&large=...&newline=..."> に変換する。
 // 独自タグ名にすると GROWI の sanitize で除去されるため、許可済みの a 要素を目印に使う。
 export const remarkPlugin = () => (tree: any) => {
   visit(tree, (node: any) => {
@@ -19,12 +19,14 @@ export const remarkPlugin = () => (tree: any) => {
     if (num > 0) {
       params.set('num', String(num));
     }
-    // more だけ書いた場合は値が空文字になる
-    if (attributes.more != null && attributes.more !== 'false') {
-      params.set('more', 'true');
+    // more / large / newline は名前だけ書いた場合に値が空文字になる
+    for (const flag of ['more', 'large', 'newline']) {
+      if (attributes[flag] != null && attributes[flag] !== 'false') {
+        params.set(flag, 'true');
+      }
     }
-    if (typeof attributes.dept === 'string' && attributes.dept !== '') {
-      params.set('dept', attributes.dept);
+    if (typeof attributes.filter === 'string' && attributes.filter !== '') {
+      params.set('filter', attributes.filter);
     }
     const data = node.data ?? (node.data = {});
     data.hName = 'a';

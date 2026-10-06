@@ -30,9 +30,18 @@ const fetchAllTags = async(): Promise<Tag[]> => {
 // タグ名は「部門名:案件名」の形を想定する。全角の「：」も区切りとして扱う
 const DEPT_SEPARATORS = [':', '：'];
 
-type TagListProps = { sort: string, num: number | null, more: boolean, dept: string | null };
+type TagListProps = {
+  sort: string,
+  num: number | null,
+  more: boolean,
+  filter: string | null,
+  large: boolean,
+  newline: boolean,
+};
 
-const TagList = ({ sort, num, more, dept }: TagListProps): any => {
+const TagList = ({
+  sort, num, more, filter, large, newline,
+}: TagListProps): any => {
   const React = getReact();
   const h = React.createElement;
   const [tags, setTags] = React.useState(null as Tag[] | null);
@@ -49,8 +58,8 @@ const TagList = ({ sort, num, more, dept }: TagListProps): any => {
   if (tags == null) {
     return h('span', { className: 'text-muted' }, 'タグ一覧を読み込み中...');
   }
-  // dept 指定時はその部門のタグだけに絞り、表示名から部門名の部分を外す
-  const prefixes = dept != null ? DEPT_SEPARATORS.map(sep => `${dept}${sep}`) : null;
+  // filter 指定時はその部門のタグだけに絞り、表示名から部門名の部分を外す
+  const prefixes = filter != null ? DEPT_SEPARATORS.map(sep => `${filter}${sep}`) : null;
   const items: (Tag & { label: string })[] = (tags as Tag[]).flatMap((tag) => {
     if (prefixes == null) {
       return [{ ...tag, label: tag.name }];
@@ -60,7 +69,7 @@ const TagList = ({ sort, num, more, dept }: TagListProps): any => {
   });
 
   if (items.length === 0) {
-    return h('span', { className: 'text-muted' }, dept != null ? `部門「${dept}」のタグがありません` : 'タグがありません');
+    return h('span', { className: 'text-muted' }, filter != null ? `部門「${filter}」のタグがありません` : 'タグがありません');
   }
 
   const sorted = items.sort((a, b) => (sort === 'name' ? a.label.localeCompare(b.label, 'ja') : b.count - a.count));
@@ -69,7 +78,8 @@ const TagList = ({ sort, num, more, dept }: TagListProps): any => {
 
   const list = h(
     'span',
-    { className: 'd-flex flex-wrap gap-2' },
+    // newline 指定時は1行に1タグ
+    { className: newline ? 'd-flex flex-column align-items-start gap-2' : 'd-flex flex-wrap gap-2' },
     visible.map(tag => h(
       'a',
       {
@@ -77,7 +87,7 @@ const TagList = ({ sort, num, more, dept }: TagListProps): any => {
         href: `/_search?q=${encodeURIComponent(`tag:${tag.name}`)}`,
         className: 'badge bg-primary text-decoration-none',
         // テーマの本文リンク色 (.wiki a など) に上書きされないようインラインで指定する
-        style: { color: '#fff' },
+        style: { color: '#fff', ...(large ? { fontSize: '175%' } : {}) },
       },
       `${tag.label} (${tag.count})`,
     )),
@@ -109,7 +119,9 @@ export const withTagList = (A: any) => {
         sort: params.get('sort') ?? 'count',
         num: num > 0 ? num : null,
         more: params.get('more') === 'true',
-        dept: params.get('dept'),
+        filter: params.get('filter'),
+        large: params.get('large') === 'true',
+        newline: params.get('newline') === 'true',
       });
     }
     return h(A ?? 'a', props);
